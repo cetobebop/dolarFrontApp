@@ -16,10 +16,9 @@
       >
         BCV:
 
-        <span
-          class="text-white lg:text-4xl sm:text-3xl break-all"
-          >{{ bcvPrice }}</span
-        >
+        <span class="text-white lg:text-4xl sm:text-3xl break-all">{{
+          bcvPrice
+        }}</span>
         bs.
       </h1>
       <h1
@@ -52,6 +51,7 @@
 
 <script setup>
 import { computed, ref } from "vue";
+import { getMonitor } from "consulta-dolar-venezuela";
 import axios from "axios";
 
 const dollarData = ref({});
@@ -59,21 +59,42 @@ const dollarCalculations = ref({});
 const inputValue = ref(1);
 
 const show = ref(true);
+const dollar = ref(null);
 
-async function getDollar() {
-  const { data } = await axios.get("http://localhost:3000/api/dollars/dollar");
-  dollarData.value.dolarToday = data.data["dolar-today"];
-  dollarData.value.bcv = data.data.bcv;
+async function getDollarLibrary() {
+  dollar.value = await getMonitor();
+  assignData(dollar.value)
+}
+
+async function getDollarMyApi() {
+  try {
+    const { data } = await axios.get(
+      "http://localhost:3000/api/dollars/dollar"
+    );
+
+    assignData(data.data);
+  } catch (error) {
+    assignData(dollar.value);
+  }
+}
+
+function assignData(data) {
+
+  const dolarToday =  data["dolar-today"] ?? 0 !== 0 ? data["dolar-today"] : 0
+
+  dollarData.value.bcv = data?.bcv;
+  dollarData.value.dolarToday = dolarToday;
+ 
 
   dollarCalculations.value = {
-    dolarToday: dollarData.value.dolarToday.price,
-    bcv: dollarData.value.bcv.price,
+    dolarToday: dollarData.value?.dolarToday?.price,
+    bcv: dollarData.value?.bcv?.price,
   };
 }
 
 function onClick() {
   dollarCalculations.value.dolarToday =
-    dollarData.value.dolarToday.price * inputValue.value;
+  dollarData.value.dolarToday.price * inputValue.value;
   dollarCalculations.value.bcv = dollarData.value.bcv.price * inputValue.value;
 
   show.value = !show.value;
@@ -87,7 +108,8 @@ const bcvPrice = computed(() => {
   return dollarCalculations.value?.bcv?.toFixed(2);
 });
 
-getDollar();
+getDollarLibrary();
+getDollarMyApi();
 </script>
 
 <style scoped>
