@@ -1,6 +1,6 @@
 <template>
   <div
-    class="sm:w-3/4 md:w-2/3 lg:w-1/2 h-fit w-full m-auto pt-6 pb-12 text-white fixed bottom-0 right-0 left-0 top-0 text-center bg-neutral-900 rounded-2xl"
+    class="sm:w-3/4 md:w-2/3 lg:w-1/2 h-fit w-full m-auto pt-6 pb-12 text-white fixed sm:bottom-0 right-0 left-0 top-0 text-center bg-neutral-900 rounded-2xl"
   >
     <h1
       id="title"
@@ -10,24 +10,24 @@
       Dolar hoy
     </h1>
 
-    <div class="my-10 w-fit mx-auto text-left">
+    <div class="my-10 w-fit sm:min-w-fit min-w-64 mx-auto text-left">
       <h1
-        class="sm:max-w-lg max-w-56 mb-3 lg:text-3xl sm:text-2xl min-[310px]:text-1xl min-[200px]:text-2xl text-neutral-300"
+        class="mb-3 lg:text-3xl sm:text-2xl min-[310px]:text-1xl min-[200px]:text-2xl text-neutral-300"
       >
         BCV:
 
-        <span class="text-white lg:text-4xl sm:text-3xl break-all">{{
-          bcvPrice
-        }}</span>
+        <span class="text-white lg:text-4xl sm:text-3xl break-all">
+          <span v-if="loading">Cargando...</span>{{ bcvPrice }}</span
+        >
         bs.
       </h1>
       <h1
-        class="sm:max-w-lg max-w-56 lg:text-3xl sm:text-2xl min-[310px]:text-1xl min-[200px]:text-2xl text-neutral-300"
+        class=" lg:text-3xl sm:text-2xl min-[310px]:text-1xl min-[200px]:text-2xl text-neutral-300"
       >
         DolarToday:
-        <span class="text-white lg:text-4xl sm:text-3xl break-all">{{
-          dolarTodayPrice
-        }}</span>
+        <span class="text-white lg:text-4xl sm:text-3xl break-all">
+          <span v-if="loading">Cargando...</span>{{ dolarTodayPrice }}</span
+        >
         bs.
       </h1>
     </div>
@@ -58,12 +58,14 @@ const dollarData = ref({});
 const dollarCalculations = ref({});
 const inputValue = ref(1);
 
+const loading = ref(false);
+
 const show = ref(true);
 const dollar = ref(null);
 
 async function getDollarLibrary() {
   dollar.value = await getMonitor();
-  assignData(dollar.value)
+  assignData(dollar.value);
 }
 
 async function getDollarMyApi() {
@@ -78,13 +80,22 @@ async function getDollarMyApi() {
   }
 }
 
-function assignData(data) {
+async function main() {
+  try {
+    loading.value = true;
+    await getDollarLibrary();
+    // getDollarMyApi();
+  } catch (error) {
+  } finally {
+    loading.value = false;
+  }
+}
 
-  const dolarToday =  data["dolar-today"] ?? 0 !== 0 ? data["dolar-today"] : 0
+function assignData(data) {
+  const dolarToday = data["dolar-today"] ?? 0 !== 0 ? data["dolar-today"] : 0;
 
   dollarData.value.bcv = data?.bcv;
   dollarData.value.dolarToday = dolarToday;
- 
 
   dollarCalculations.value = {
     dolarToday: dollarData.value?.dolarToday?.price,
@@ -94,7 +105,7 @@ function assignData(data) {
 
 function onClick() {
   dollarCalculations.value.dolarToday =
-  dollarData.value.dolarToday.price * inputValue.value;
+    dollarData.value.dolarToday.price * inputValue.value;
   dollarCalculations.value.bcv = dollarData.value.bcv.price * inputValue.value;
 
   show.value = !show.value;
@@ -108,8 +119,7 @@ const bcvPrice = computed(() => {
   return dollarCalculations.value?.bcv?.toFixed(2);
 });
 
-getDollarLibrary();
-getDollarMyApi();
+main()
 </script>
 
 <style scoped>
